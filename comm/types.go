@@ -24,7 +24,7 @@ func NewUpdateFromJSON(rawUpdate interface{}) Update {
 	chatMap := messageMap["chat"].(map[string]interface{})
 
 	chat := Chat{
-		id:        int(chatMap["id"].(float64)),
+		ID:        int(chatMap["id"].(float64)),
 		firstName: chatMap["first_name"].(string),
 		cType:     chatMap["type"].(string),
 	}
@@ -57,7 +57,7 @@ type User struct {
 
 //Chat is Chat type
 type Chat struct {
-	id        int
+	ID        int
 	firstName string
 	cType     string
 }

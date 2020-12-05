@@ -4,27 +4,27 @@ import (
 	"sync"
 )
 
-//SafeRxQueue : All operations shall be thread safe to use
-type SafeRxQueue struct {
+//SafeQueue : All operations shall be thread safe to use
+type SafeQueue struct {
 	Mu      sync.Mutex
-	UpdateQ []Update
+	UpdateQ []interface{}
 }
 
-func (s *SafeRxQueue) IsEmpty() bool {
+func (s *SafeQueue) IsEmpty() bool {
 	s.Mu.Lock()
 	retVal := len(s.UpdateQ) == 0
 	s.Mu.Unlock()
 	return retVal
 }
 
-func (s *SafeRxQueue) EnQueue(u Update) {
+func (s *SafeQueue) EnQueue(u interface{}) {
 	s.Mu.Lock()
 	s.UpdateQ = append(s.UpdateQ, u)
 	s.Mu.Unlock()
 
 }
 
-func (s *SafeRxQueue) DeQueue() Update {
+func (s *SafeQueue) DeQueue() interface{} {
 	s.Mu.Lock()
 	u := s.UpdateQ[0]
 	s.UpdateQ = s.UpdateQ[1:]
@@ -32,6 +32,6 @@ func (s *SafeRxQueue) DeQueue() Update {
 	return u
 }
 
-func NewSafeRxQueue() SafeRxQueue {
-	return SafeRxQueue{}
+func NewSafeQueue() SafeQueue {
+	return SafeQueue{}
 }
