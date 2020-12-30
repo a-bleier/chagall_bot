@@ -36,31 +36,26 @@ func (s *Stub) Listen() {
 			fmt.Print("Error")
 		}
 
-		response, _ := ioutil.ReadAll(resp.Body)
-
-		var formattedJSONBuffer bytes.Buffer
-		json.Indent(&formattedJSONBuffer, response, "", "\t")
-
-		//fmt.Printf("%s", formattedJSONBuffer.Bytes())
-
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("error")
+			return
+		}
 		defer resp.Body.Close()
 
-		//put in rxQueue
-		var obj map[string]interface{}
-		err = json.Unmarshal(response, &obj)
+		var apiResp APIResponse
+		err = json.Unmarshal(data, &apiResp)
 		if err != nil {
 			panic(err)
 		}
-		result := obj["result"].([]interface{})
-		fmt.Println("me here")
-		for _, res := range result {
-			update := NewUpdateFromJSON(res)
-			s.lastUpdate = update.Id
-			s.queue.EnQueue(update)
+		var updates []Update
+		json.Unmarshal(apiResp.Result, &updates)
+
+		for _, u := range updates {
+			item := QueueItem{u, "update"}
+			s.lastUpdate = u.Id
+			s.queue.EnQueue(item)
 		}
-
-		//wake up main routine
-
 		s.cond.Signal()
 
 	}
@@ -78,13 +73,16 @@ func (s *Stub) Send() {
 		for s.queue.IsEmpty() {
 			s.cond.Wait()
 		}
-		text := s.queue.DeQueue().(string)
+		//text := s.queue.DeQueue().(string)
+		item := s.queue.DeQueue()
 		s.cond.L.Unlock()
 
-		fmt.Println("Gonna send", text)
-
-		url := "https://api.telegram.org/bot" + s.apiKey + "/sendMessage"
-		jsonStr := []byte(text)
+		jsonStr := item.Data.([]byte)
+		method := item.Info
+		//fmt.Println("Gonna send", text)
+		fmt.Println(method)
+		url := "https://api.telegram.org/bot" + s.apiKey + "/" + method
+		//jsonStr := []byte(text)
 
 		resp, _ := http.Post(url, "application/json", bytes.NewBuffer(jsonStr))
 

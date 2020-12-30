@@ -5,9 +5,16 @@ import (
 )
 
 //SafeQueue : All operations shall be thread safe to use
+
+//TODO make a queue item
+
+type QueueItem struct {
+	Data interface{}
+	Info string
+}
 type SafeQueue struct {
 	Mu      sync.Mutex
-	UpdateQ []interface{}
+	UpdateQ []QueueItem
 }
 
 func (s *SafeQueue) IsEmpty() bool {
@@ -17,19 +24,19 @@ func (s *SafeQueue) IsEmpty() bool {
 	return retVal
 }
 
-func (s *SafeQueue) EnQueue(u interface{}) {
+func (s *SafeQueue) EnQueue(item QueueItem) {
 	s.Mu.Lock()
-	s.UpdateQ = append(s.UpdateQ, u)
+	s.UpdateQ = append(s.UpdateQ, item)
 	s.Mu.Unlock()
 
 }
 
-func (s *SafeQueue) DeQueue() interface{} {
+func (s *SafeQueue) DeQueue() QueueItem {
 	s.Mu.Lock()
-	u := s.UpdateQ[0]
+	qi := s.UpdateQ[0]
 	s.UpdateQ = s.UpdateQ[1:]
 	s.Mu.Unlock()
-	return u
+	return qi
 }
 
 func NewSafeQueue() SafeQueue {

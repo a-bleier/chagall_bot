@@ -1,63 +1,64 @@
 package comm
 
+import "encoding/json"
+
 //Update contains unmarshalled JSON Data of an Update From Telegram
+type APIResponse struct {
+	Ok          bool               `json:"ok"`
+	Result      json.RawMessage    `json:"result"`
+	ErrorCode   int                `json:"error_code"`
+	Description string             `json:"description"`
+	Paramters   ResponseParameters `json:"parameters"`
+}
+
+type ResponseParameters struct {
+	MigrateToChatID int64 `json:"migrate_to_chat_id"`
+	RetryAfter      int   `json:"retry_after"`
+}
 type Update struct {
-	Id      int
-	Message Message
+	Id            int           `json:"update_id"`
+	Message       Message       `json:"message"`
+	InlineQuery   InlineQuery   `json:"inline_query"`
+	CallbackQuery CallbackQuery `json:"callback_query"`
 }
 
 //Message is Message Type
 type Message struct {
-	ID    int
-	From  User
-	Mchat Chat
-	Date  int
-	Text  string
-}
-
-func NewUpdateFromJSON(rawUpdate interface{}) Update {
-	updateMap := rawUpdate.(map[string]interface{})
-	updateId := int(updateMap["update_id"].(float64))
-	messageMap := updateMap["message"].(map[string]interface{})
-	messageId := int(messageMap["message_id"].(float64))
-	fromMap := messageMap["from"].(map[string]interface{})
-	chatMap := messageMap["chat"].(map[string]interface{})
-
-	chat := Chat{
-		ID:        int(chatMap["id"].(float64)),
-		firstName: chatMap["first_name"].(string),
-		cType:     chatMap["type"].(string),
-	}
-	from := User{
-		id:           int(fromMap["id"].(float64)),
-		isBot:        fromMap["is_bot"].(bool),
-		firstName:    fromMap["first_name"].(string),
-		languageCode: fromMap["language_code"].(string),
-	}
-	msg := Message{
-		ID:    messageId,
-		From:  from,
-		Mchat: chat,
-		Date:  int(messageMap["date"].(float64)),
-		Text:  messageMap["text"].(string),
-	}
-	return Update{
-		Id:      updateId,
-		Message: msg,
-	}
+	Id   int    `json:"message_id"`
+	From User   `json:"from"`
+	Chat Chat   `json:"chat"`
+	Date int    `json:"date"`
+	Text string `json:"text"`
 }
 
 //User is User type
 type User struct {
-	id           int
-	isBot        bool
-	firstName    string
-	languageCode string
+	Id           uint64 `json:"id"`
+	IsBot        bool   `json:"is_bot"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	LanguageCode string `json:"language_code"`
 }
 
 //Chat is Chat type
 type Chat struct {
-	ID        int
-	firstName string
-	cType     string
+	Id        uint64 `json:"id"`
+	UserName  string `json:"username"`
+	FirstName string `json:"first_name"`
+	Type      string `json:"type"`
+}
+
+type InlineQuery struct {
+	Id     string `json:"id"`
+	From   User   `json:"from"`
+	Query  string `json:"query"`
+	Offset string `json:"offset"`
+}
+
+type CallbackQuery struct {
+	Id              string  `json:"id"`
+	From            User    `json:"from"`
+	Message         Message `json:"message,omitempty"`
+	InlineMessageId string  `json:"inline_message_id.omitempty"`
+	Data            string  `json:"data"`
 }
