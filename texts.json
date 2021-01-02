@@ -1,7 +1,20 @@
 {
   "introduction": "Hi !\nI'm Chagall, a friendly bot.\nHow can I help you ?",
+  "birthdayService" : "Here are options to configure your birthday reminders:\n",
   "goodbye" : "Bye !\nSee you soon :)",
-  "inlineButtons" : [
-
-  ]
+  "rejection" : "Sorry, I don't know you. Please contact the admin of this bot",
+  "offerServiceAgain" : "Can I offer you another service ?",
+  "inlineKeyboards" : {
+      "serviceOffer" : [
+        "Birthdays",
+        "Quit"
+      ],
+    "birthdayService" : [
+      "List",
+      "Add",
+      "Remove",
+      "Edit",
+      "Back"
+    ]
+  }
 }

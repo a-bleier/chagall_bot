@@ -10,6 +10,13 @@ type SendMessage struct {
 	DisableWebPagePreview bool        `json:"disable_web_page_preview,omitempty"`
 	ReplyMarkup           interface{} `json:"reply_markup,omitempty"`
 }
+type AnswerCallbackQuery struct {
+	CallbackQueryId string `json:"callback_query_id"`
+	Text            string `json:"text,omitempty"`
+	ShowAlert       bool   `json:"show_alert,omitempty"`
+	Url             string `json:"url,omitempty"`
+	CacheTime       int    `json:"cache_time,omitempty"`
+}
 type InlineKeyboardMarkup struct {
 	Keyboard [][]KeyboardButton `json:"inline_keyboard"`
 }

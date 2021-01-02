@@ -11,7 +11,7 @@ import (
 )
 
 type globalConfig struct {
-	telegramKey string
+	telegramKey string `json:"telegramKey"`
 }
 
 func (gConf *globalConfig) setupGlobalConfig() {
@@ -22,6 +22,7 @@ func (gConf *globalConfig) setupGlobalConfig() {
 	gConf.telegramKey = temp["telegramKey"].(string)
 }
 
+//TODO: Remove this one
 var txQueue comm.SafeQueue
 
 func main() {
@@ -29,13 +30,12 @@ func main() {
 
 	//Init db
 	db.InitChagDB("simple.sqlite")
-	fmt.Println(db.CheckUserIsRegistered(strconv.Itoa(1264160269)))
 
 	//Init cron
 	initCronJobs()
 
 	//init state machine
-	initStates()
+	stateMachine := NewStateMachine()
 
 	//TODO Store last update in global config
 	var gConfig globalConfig
@@ -72,18 +72,12 @@ func main() {
 		fmt.Println(update.Message.Text)
 
 		if db.CheckUserIsRegistered(strconv.Itoa(1264160269)) == false {
-			fmt.Println("No registered user tries to log in")
-			//responseText = "Sorry, I don't know you. Please contact Adrian if you want to use this bot"
-			//txQueue.EnQueue(fmt.Sprintf(`{"chat_id" : %d,"text" : "%s"}`, responseChatId, responseText))
+			fmt.Println("A unregistered user tries to log in")
+			//TODO Send info text to unregistered user
 			continue
 		}
-		//responseText = update.Message.Text
 
-		fmt.Println("From: ", update.Message.From)
-
-		transitStates(update)
-		//ReplyKeyboardMarkup
-		//TODO check user state
+		stateMachine.transitStates(update)
 		/*
 			When fresh conversation -> send list of services [Birthdays | Quit]
 			When Quit -> goodbye message
