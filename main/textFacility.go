@@ -20,7 +20,7 @@ func NewTextFacility() TextFacility {
 }
 
 func (t *TextFacility) getMessageText(key string) string {
-	if key == "inlineKeyboards" {
+	if key == "" {
 		return ""
 	}
 
