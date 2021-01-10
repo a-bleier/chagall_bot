@@ -15,20 +15,31 @@ const (
 	START_STATE state = iota
 	CHOOSING_SERVICE_STATE
 	BIRTHDAYS_STATE
-	ADD_BIRTHDAY_STATE
+	ASK_BIRTHDAY_NAME
+	ASK_BIRTHDAY_DATE
+	ASK_BIRTHDAY_CONTACT
+	ASK_BIRTHDAY_CONFIRMATION
+	ADD_BIRTHDAY_CONFIRMATION
 	REMOVE_BIRTHDAYY_STATE
 )
 
 type StateMachine struct {
 	userStateLookup map[uint64]state
 	textFacility    TextFacility
+	bdStateMachine  birthdayStateMachine
 }
 
 func NewStateMachine() StateMachine {
+	textFacility := NewTextFacility()
+	bdStateMachine := birthdayStateMachine{&textFacility,
+		make(map[uint64]state),
+		birthdayEntry{}}
 	return StateMachine{userStateLookup: make(map[uint64]state),
-		textFacility: NewTextFacility()}
+		textFacility:   textFacility,
+		bdStateMachine: bdStateMachine}
 }
 
+//TODO: Encapsule each service into its own type with own states i.o. to shrink the main state machine
 func (s *StateMachine) transitStates(update comm.Update) bool {
 
 	var userId uint64
@@ -56,55 +67,10 @@ func (s *StateMachine) transitStates(update comm.Update) bool {
 		s.userStateLookup[userId] = processServiceCallback(update.CallbackQuery, &s.textFacility)
 		break
 	case BIRTHDAYS_STATE: //NOTE: When adding new services, thi from here encapsule in new function
-		s.userStateLookup[userId] = processBirthdaysCallback(update.CallbackQuery, &s.textFacility)
+		s.userStateLookup[userId] = s.bdStateMachine.transitStates(update)
 		break
 	}
 	return false
-}
-
-func processBirthdaysCallback(cbQuery comm.CallbackQuery, facility *TextFacility) state {
-	var retState state
-
-	if cbQuery.Id == "" {
-		retState = BIRTHDAYS_STATE
-	} else {
-
-		if cbQuery.Data == "Back" {
-			sendTextInlineKeyboard("",
-				fmt.Sprintf("%d", cbQuery.Message.Chat.Id),
-				"offerServiceAgain",
-				"serviceOffer",
-				facility)
-			retState = CHOOSING_SERVICE_STATE
-		} else if cbQuery.Data == "List" {
-			sendTextInlineKeyboard(fmt.Sprintf("%d", cbQuery.From.Id),
-				fmt.Sprintf("%d", cbQuery.Message.Chat.Id),
-				"listBirthdays",
-				"serviceOffer",
-				facility)
-			retState = BIRTHDAYS_STATE
-		} else if cbQuery.Data == "Add" {
-
-		} else if cbQuery.Data == "Remove" {
-
-		} else if cbQuery.Data == "Edit" {
-
-		}
-	}
-	return retState
-}
-
-func addRoutine() {
-
-}
-
-func RemoveRoutine() {
-
-}
-
-//Not so important here
-func editRoutine() {
-
 }
 
 //TODO better error processing
@@ -149,6 +115,22 @@ func answerCallbackQuery(id string) {
 }
 
 //This function shall abstract the messages to the user which have the form  [text + inline buttons]
+//TODO: Remove user id and database access from this function
+
+func sendSimpleMessage(chatId, messageText string) {
+
+	var sMessage comm.SendMessage
+	sMessage = comm.SendMessage{
+		Text:   messageText,
+		ChatID: chatId,
+	}
+	data, err := json.Marshal(sMessage)
+	if err != nil {
+		panic(err)
+	}
+	item := comm.QueueItem{data, "sendMessage"}
+	txQueue.EnQueue(item)
+}
 func sendTextInlineKeyboard(userId string, chatId string, messageKey string, inlineButtonGroupKey string, facility *TextFacility) {
 	//give the key to textFacility, receive a inlinekeyboardTemplate [][]string
 	//build a inlineKeyboard
@@ -156,7 +138,9 @@ func sendTextInlineKeyboard(userId string, chatId string, messageKey string, inl
 	var sMessage comm.SendMessage
 	var messageText string
 	if messageKey == "listBirthdays" {
-		messageText = strings.Join(db.ListAllBirthdays(userId), "\n")
+		messageText = strings.Join(db.ListAllBirthdays(userId), "\n") //TODO throw out db query from here
+	} else if messageKey == "" {
+		messageText = ""
 	} else {
 		messageText = facility.getMessageText(messageKey)
 	}

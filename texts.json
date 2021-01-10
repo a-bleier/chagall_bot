@@ -4,6 +4,11 @@
   "goodbye" : "Bye !\nSee you soon :)",
   "rejection" : "Sorry, I don't know you. Please contact the admin of this bot",
   "offerServiceAgain" : "Can I offer you another service ?",
+  "askBirthdayName" : "What is his / her name ?",
+  "askBirthdayDate" : "Please tell me the date of the birthday",
+  "askBirthdayContact" : "Please tell me her / his contact",
+  "askBirthdayConfirmation" : "Confirm your new entry",
+  "confirmMessage" : "Please confirm: ",
   "inlineKeyboards" : {
       "serviceOffer" : [
         "Birthdays",
@@ -15,6 +20,10 @@
       "Remove",
       "Edit",
       "Back"
+    ],
+    "yesNo" : [
+      "Yes",
+      "No"
     ]
   }
 }
