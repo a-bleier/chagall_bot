@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 	"github.com/a-bleier/chagall_bot/comm"
+	"github.com/a-bleier/chagall_bot/db"
 )
 
 type birthdayStateMachine struct {
 	textFacility    *TextFacility
 	userStateLookup map[uint64]state
-	newBirthday     birthdayEntry
+	newBirthday     birthdayEntry //FIXME: Only works when one user is adding a new entry; ---> add map[userId]entry
 }
 
 type birthdayEntry struct {
@@ -50,6 +51,11 @@ func (b *birthdayStateMachine) transitStates(update comm.Update) state {
 		confValue := update.CallbackQuery.Data
 		if confValue == "Yes" {
 			sendSimpleMessage(fmt.Sprintf("%d", chatId), "new entry confirmed")
+			err := db.AddBirthday(fmt.Sprintf("%d", userId), b.newBirthday.date, b.newBirthday.name, b.newBirthday.contact)
+			if err != nil {
+				panic(err)
+			}
+			b.newBirthday = birthdayEntry{}
 		} else if confValue == "No" {
 			b.userStateLookup[userId] = BIRTHDAYS_STATE
 			sendSimpleMessage(fmt.Sprintf("%d", chatId), "new entry discarded")

@@ -9,6 +9,8 @@ import (
 
 var chagDb *sql.DB
 
+//TODO: Need to add a chat id to the users
+
 func InitChagDB(dbName string) {
 	var err error
 	chagDb, err = sql.Open("sqlite3", "simple.sqlite")
@@ -44,4 +46,18 @@ WHERE UserID IN (SELECT id_internal from Users where id_telegram = ?)`, user_id)
 		output = append(output, line)
 	}
 	return output
+}
+
+//TODO Date formatting
+func AddBirthday(userTelegramId string, date, name, contact string) error {
+	transaction, _ := chagDb.Begin()
+
+	_, err := transaction.Exec(`INSERT INTO Birthdays (Date, Name, Contact, UserId) VALUES (?, ?, ?, (SELECT id_internal FROM Users WHERE id_telegram = ?))`,
+		date,
+		name,
+		contact,
+		userTelegramId,
+	)
+	transaction.Commit()
+	return err
 }
