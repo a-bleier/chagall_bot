@@ -158,12 +158,13 @@ func sendTextInlineKeyboard(userId string, chatId string, messageKey string, inl
 			ChatID: chatId,
 		}
 	}
-
-	data, err := json.Marshal(sMessage)
-	if err != nil {
-		panic(err)
-	}
-	item := comm.QueueItem{data, "sendMessage"}
-	txQueue.EnQueue(item)
+	//
+	//data, err := json.Marshal(sMessage)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//item := comm.QueueItem{data, "sendMessage"}
+	//txQueue.EnQueue(item)
+	sender.AddMessageToTx(sMessage, "sendMessage")
 
 }

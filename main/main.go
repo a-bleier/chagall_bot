@@ -24,6 +24,7 @@ func (gConf *globalConfig) setupGlobalConfig() {
 
 //TODO: Remove this one
 var txQueue comm.SafeQueue
+var sender comm.Stub
 
 func main() {
 	//1264160269
@@ -53,7 +54,7 @@ func main() {
 	condT := sync.NewCond(&mT)
 
 	txQueue = comm.NewSafeQueue()
-	sender := comm.NewStub(&txQueue, 698207968, condT, gConfig.telegramKey, false)
+	sender = comm.NewStub(&txQueue, 698207968, condT, gConfig.telegramKey, false)
 
 	go listener.Listen()
 	go sender.Send()
@@ -69,6 +70,8 @@ func main() {
 
 		update := item.Data.(comm.Update)
 		fmt.Println(update.Id)
+		fmt.Println("chatId", update.Message.Chat.Id)
+		fmt.Println("userId ", update.Message.From.Id)
 		fmt.Println(update.Message.Text)
 
 		if db.CheckUserIsRegistered(strconv.Itoa(1264160269)) == false {

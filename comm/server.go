@@ -96,6 +96,17 @@ func (s *Stub) Send() {
 	//Do some sending here
 }
 
+//Could turn out wonky due to race conditions
+func (s *Stub) AddMessageToTx(v interface{}, dataType string) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	item := QueueItem{data, "sendMessage"}
+	s.queue.EnQueue(item)
+	s.cond.Broadcast()
+}
+
 //NewServer returns a new Stub
 func NewStub(rx *SafeQueue, lastUpdateID int, cond *sync.Cond, apiKey string, isListener bool) Stub {
 	return Stub{

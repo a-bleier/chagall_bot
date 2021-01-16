@@ -11,6 +11,14 @@ var chagDb *sql.DB
 
 //TODO: Need to add a chat id to the users
 
+type EntryBirthdayReminder struct {
+	ChatId   string
+	UserName string
+	Name     string
+	Date     string
+	Contact  string
+}
+
 func InitChagDB(dbName string) {
 	var err error
 	chagDb, err = sql.Open("sqlite3", "simple.sqlite")
@@ -60,4 +68,27 @@ func AddBirthday(userTelegramId string, date, name, contact string) error {
 	)
 	transaction.Commit()
 	return err
+}
+
+func GetAllEntryBirthdayReminders() ([]EntryBirthdayReminder, error) {
+	rows, _ := chagDb.Query("SELECT Users.Name, ChatId, Date, Birthdays.Name, Contact FROM Users JOIN Birthdays")
+	defer rows.Close()
+	var ebrList []EntryBirthdayReminder = make([]EntryBirthdayReminder, 0)
+	for rows.Next() {
+
+		ebr := EntryBirthdayReminder{}
+		err := rows.Scan(
+			&ebr.UserName,
+			&ebr.ChatId,
+			&ebr.Date,
+			&ebr.Name,
+			&ebr.Contact,
+		)
+		if err != nil {
+			return nil, err
+		}
+		ebrList = append(ebrList, ebr)
+	}
+
+	return ebrList, nil
 }
