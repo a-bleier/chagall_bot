@@ -23,11 +23,9 @@ func initCronJobs() {
 	cronObject.Start()
 }
 
+//checkBirthdays goes through entries in Birthdays table and check is a person has its birthday today. if it found one,
+//a message will be put in the queue
 func checkBirthdays() {
-	/*
-		TODO: query the birthdays which are today
-		write a message to the users
-	*/
 	fmt.Println("checking for birthdays")
 	ebrList, err := db.GetAllEntryBirthdayReminders()
 	if err != nil {

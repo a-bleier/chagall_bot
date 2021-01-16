@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/a-bleier/chagall_bot/comm"
 	"github.com/a-bleier/chagall_bot/db"
+	"strings"
 )
 
 type birthdayStateMachine struct {
@@ -89,18 +90,20 @@ func (b *birthdayStateMachine) processBirthdaysCallback(update comm.Update, faci
 				facility)
 			retState = CHOOSING_SERVICE_STATE
 		} else if cbQuery.Data == "List" {
+			sendSimpleMessage(fmt.Sprintf("%d", cbQuery.Message.Chat.Id),
+				strings.Join(db.ListAllBirthdays(fmt.Sprintf("%d", cbQuery.From.Id)), "\n"))
 			sendTextInlineKeyboard(fmt.Sprintf("%d", cbQuery.From.Id),
 				fmt.Sprintf("%d", cbQuery.Message.Chat.Id),
-				"listBirthdays",
+				"birthdayService",
 				"birthdayService",
 				facility)
 			retState = BIRTHDAYS_STATE
 		} else if cbQuery.Data == "Add" {
 			retState = b.addRoutine(ASK_BIRTHDAY_NAME, cbQuery.Message.Chat.Id, update.Message.Text)
 		} else if cbQuery.Data == "Remove" {
-
+			//tbd
 		} else if cbQuery.Data == "Edit" {
-
+			//tbd
 		}
 	}
 	return retState

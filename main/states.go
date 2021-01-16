@@ -4,8 +4,6 @@ package main
 import (
 	"fmt"
 	"github.com/a-bleier/chagall_bot/comm"
-	"github.com/a-bleier/chagall_bot/db"
-	"strings"
 )
 
 type state int
@@ -38,7 +36,6 @@ func NewStateMachine() StateMachine {
 		bdStateMachine: bdStateMachine}
 }
 
-//TODO: Encapsule each service into its own type with own states i.o. to shrink the main state machine
 func (s *StateMachine) transitStates(update comm.Update) bool {
 
 	var userId uint64
@@ -108,9 +105,6 @@ func answerCallbackQuery(id string) {
 	sender.AddMessageToTx(answer, "answerCallbackQuery")
 }
 
-//This function shall abstract the messages to the user which have the form  [text + inline buttons]
-//TODO: Remove user id and database access from this function
-
 func sendSimpleMessage(chatId, messageText string) {
 
 	var sMessage comm.SendMessage
@@ -120,15 +114,14 @@ func sendSimpleMessage(chatId, messageText string) {
 	}
 	sender.AddMessageToTx(sMessage, "sendMessage")
 }
+
 func sendTextInlineKeyboard(userId string, chatId string, messageKey string, inlineButtonGroupKey string, facility *TextFacility) {
 	//give the key to textFacility, receive a inlinekeyboardTemplate [][]string
 	//build a inlineKeyboard
 
 	var sMessage comm.SendMessage
 	var messageText string
-	if messageKey == "listBirthdays" {
-		messageText = strings.Join(db.ListAllBirthdays(userId), "\n") //TODO throw out db query from here
-	} else if messageKey == "" {
+	if messageKey == "" {
 		messageText = ""
 	} else {
 		messageText = facility.getMessageText(messageKey)
