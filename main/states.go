@@ -2,7 +2,6 @@ package main
 
 //TODO maybe move in own package
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/a-bleier/chagall_bot/comm"
 	"github.com/a-bleier/chagall_bot/db"
@@ -106,12 +105,7 @@ func answerCallbackQuery(id string) {
 	answer := comm.AnswerCallbackQuery{
 		CallbackQueryId: id,
 	}
-	data, err := json.Marshal(answer)
-	if err != nil {
-		panic(err)
-	}
-	item := comm.QueueItem{data, "answerCallbackQuery"}
-	txQueue.EnQueue(item)
+	sender.AddMessageToTx(answer, "answerCallbackQuery")
 }
 
 //This function shall abstract the messages to the user which have the form  [text + inline buttons]
@@ -124,12 +118,7 @@ func sendSimpleMessage(chatId, messageText string) {
 		Text:   messageText,
 		ChatID: chatId,
 	}
-	data, err := json.Marshal(sMessage)
-	if err != nil {
-		panic(err)
-	}
-	item := comm.QueueItem{data, "sendMessage"}
-	txQueue.EnQueue(item)
+	sender.AddMessageToTx(sMessage, "sendMessage")
 }
 func sendTextInlineKeyboard(userId string, chatId string, messageKey string, inlineButtonGroupKey string, facility *TextFacility) {
 	//give the key to textFacility, receive a inlinekeyboardTemplate [][]string
@@ -158,13 +147,5 @@ func sendTextInlineKeyboard(userId string, chatId string, messageKey string, inl
 			ChatID: chatId,
 		}
 	}
-	//
-	//data, err := json.Marshal(sMessage)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//item := comm.QueueItem{data, "sendMessage"}
-	//txQueue.EnQueue(item)
 	sender.AddMessageToTx(sMessage, "sendMessage")
-
 }

@@ -23,7 +23,6 @@ func (gConf *globalConfig) setupGlobalConfig() {
 }
 
 //TODO: Remove this one
-var txQueue comm.SafeQueue
 var sender comm.Stub
 
 func main() {
@@ -53,7 +52,7 @@ func main() {
 	mT := sync.Mutex{}
 	condT := sync.NewCond(&mT)
 
-	txQueue = comm.NewSafeQueue()
+	txQueue := comm.NewSafeQueue()
 	sender = comm.NewStub(&txQueue, 698207968, condT, gConfig.telegramKey, false)
 
 	go listener.Listen()
@@ -90,10 +89,7 @@ func main() {
 			when exit -> fresh conversation
 			after 5 minutes all states will timeout to fresh conversation
 		*/
-
 		//txQueue.EnQueue(fmt.Sprintf(`{"chat_id" : %d,"text" : "%s"}`, responseChatId, responseText))
-
-		condT.Broadcast()
 	}
 
 }
