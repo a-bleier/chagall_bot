@@ -36,9 +36,11 @@ func CheckUserIsRegistered(id string) bool {
 }
 
 func ListAllBirthdays(user_id string) []string {
-	rows, _ := chagDb.Query(`SELECT Date, Name, Contact FROM Birthdays 
-WHERE UserID IN (SELECT id_internal from Users where id_telegram = ?)`, user_id)
+	rows, err := chagDb.Query(`SELECT Date, Name, Contact FROM Birthdays WHERE UserID IN (SELECT id_internal from Users where id_telegram = ? ) order by Name asc, Date asc`, user_id)
 	defer rows.Close()
+	if err != nil {
+		panic(err)
+	}
 	var output []string = make([]string, 0)
 	for rows.Next() {
 		var (
@@ -91,4 +93,20 @@ func GetAllEntryBirthdayReminders() ([]EntryBirthdayReminder, error) {
 	}
 
 	return ebrList, nil
+}
+
+func DeleteNthBirthday(n int, userTelegramId string) error {
+	transaction, _ := chagDb.Begin()
+
+	_, err := transaction.Exec(`DELETE FROM Birthdays Where Id In (SELECT Id FROM Birthdays WHERE UserID IN (SELECT id_internal from Users where id_telegram = ? ) order by Name asc, Date asc LIMIT ? OFFSET ?)`,
+		userTelegramId, n, n)
+
+	if err != nil {
+		transaction.Rollback()
+		return err
+	}
+
+	transaction.Commit()
+
+	return nil
 }

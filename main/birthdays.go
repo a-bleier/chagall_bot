@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/a-bleier/chagall_bot/comm"
 	"github.com/a-bleier/chagall_bot/db"
+	"strconv"
 	"strings"
 )
 
@@ -68,6 +69,10 @@ func (b *birthdayStateMachine) transitStates(update comm.Update) state {
 			"birthdayService",
 			b.textFacility)
 		break
+	case REMOVE_BIRTHDAY_STATE:
+		b.userStateLookup[userId] = b.removeRoutine(b.userStateLookup[userId], chatId, userId, update.CallbackQuery.Data)
+	case REMOVE_BIRTHDAY_CONFIRMATION:
+		b.userStateLookup[userId] = b.removeRoutine(b.userStateLookup[userId], chatId, userId, update.Message.Text)
 	}
 
 	return BIRTHDAYS_STATE
@@ -101,15 +106,13 @@ func (b *birthdayStateMachine) processBirthdaysCallback(update comm.Update, faci
 		} else if cbQuery.Data == "Add" {
 			retState = b.addRoutine(ASK_BIRTHDAY_NAME, cbQuery.Message.Chat.Id, update.Message.Text)
 		} else if cbQuery.Data == "Remove" {
-			//tbd
+			retState = b.removeRoutine(REMOVE_BIRTHDAY_STATE, cbQuery.Message.Chat.Id, cbQuery.Message.From.Id, update.Message.Text)
 		} else if cbQuery.Data == "Edit" {
 			//tbd
 		}
 	}
 	return retState
 }
-
-//TODO: Write a  function which puts the birthday reminders from db in the cron jobs
 
 func (b *birthdayStateMachine) addRoutine(currentState state, chatId uint64, messageText string) state {
 
@@ -154,15 +157,37 @@ func (b *birthdayStateMachine) addRoutine(currentState state, chatId uint64, mes
 	return retState
 }
 
-func removeRoutine() {
+func (b *birthdayStateMachine) removeRoutine(currentState state, chatId uint64, userId uint64, messageText string) state {
 
-	//give the users choices
-
-	//ask the user which one to delete
-
-	//delete from db
-
-	//delete from cron
+	var retState state = BIRTHDAYS_STATE
+	switch currentState {
+	case REMOVE_BIRTHDAY_STATE:
+		text := ""
+		entries := db.ListAllBirthdays(fmt.Sprintf("%d", chatId))
+		fmt.Println(entries)
+		for i, e := range entries {
+			text += fmt.Sprintf("%d %s\n", i, e)
+		}
+		fmt.Println("Delete list ", text)
+		sendSimpleMessage(fmt.Sprintf("%d", chatId), text)
+		sendSimpleMessage(fmt.Sprintf("%d", chatId), b.textFacility.getMessageText("askForNumber"))
+		retState = REMOVE_BIRTHDAY_CONFIRMATION
+	case REMOVE_BIRTHDAY_CONFIRMATION:
+		num, err := strconv.Atoi(messageText)
+		if err != nil {
+			sendSimpleMessage(fmt.Sprintf("%d", chatId), b.textFacility.getMessageText("askForNumber"))
+			retState = REMOVE_BIRTHDAY_CONFIRMATION
+			break
+		}
+		db.DeleteNthBirthday(num, fmt.Sprintf("%d", userId))
+		sendTextInlineKeyboard("",
+			fmt.Sprintf("%d", chatId),
+			"deletedConfirmation",
+			"birthdayService",
+			b.textFacility)
+		retState = BIRTHDAYS_STATE
+	}
+	return retState
 }
 
 //Not so important here

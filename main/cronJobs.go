@@ -9,17 +9,16 @@ import (
 	"time"
 )
 
-//TODO: Write a cron job which will check everyday at 00:00 if someone needs to be remembered because of an birthday
-
 func initCronJobs() {
 	cronObject := cron.New()
 	fmt.Println("Setting up a cron job")
 	cronObject.AddFunc("*/10 */1 * * * *", func() {
 		fmt.Println("Job done")
 	})
-	cronObject.AddFunc("*/10 */1 * * * *", checkBirthdays)
+	//cronObject.AddFunc("*/10 */1 * * * *", checkBirthdays)
 	//For production
-	//cronObject.AddFunc("* * * */31 * *", checkBirthdays)
+	//TODO: Check if this works
+	cronObject.AddFunc("* * 0 1-31 * *", checkBirthdays)
 	cronObject.Start()
 }
 

@@ -9,6 +9,8 @@
   "askBirthdayContact" : "Please tell me her / his contact",
   "askBirthdayConfirmation" : "Confirm your new entry",
   "confirmMessage" : "Please confirm: ",
+  "askForNumber" : "Please give me a number which I should delete",
+  "deletedConfirmation" : "Deleted birthday. Can I help you otherwise ?",
   "inlineKeyboards" : {
       "serviceOffer" : [
         "Birthdays",
