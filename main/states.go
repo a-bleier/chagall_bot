@@ -32,7 +32,7 @@ func NewStateMachine() StateMachine {
 	textFacility := NewTextFacility()
 	bdStateMachine := birthdayStateMachine{&textFacility,
 		make(map[uint64]state),
-		birthdayEntry{}}
+		make(map[uint64]*birthdayEntry)}
 	return StateMachine{userStateLookup: make(map[uint64]state),
 		textFacility:   textFacility,
 		bdStateMachine: bdStateMachine}

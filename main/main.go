@@ -26,7 +26,6 @@ func (gConf *globalConfig) setupGlobalConfig() {
 var sender comm.Stub
 
 func main() {
-	//1264160269
 
 	//Init db
 	db.InitChagDB("simple.sqlite")
@@ -80,16 +79,6 @@ func main() {
 		}
 
 		stateMachine.transitStates(update)
-		/*
-			When fresh conversation -> send list of services [Birthdays | Quit]
-			When Quit -> goodbye message
-			when birthdays checked -> send options to modify [list | add | remove | exit]
-			when add -> ask for name and birthday
-			when list or remove -> birthdays checked
-			when exit -> fresh conversation
-			after 5 minutes all states will timeout to fresh conversation
-		*/
-		//txQueue.EnQueue(fmt.Sprintf(`{"chat_id" : %d,"text" : "%s"}`, responseChatId, responseText))
 	}
 
 }

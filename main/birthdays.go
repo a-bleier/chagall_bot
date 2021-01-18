@@ -9,9 +9,9 @@ import (
 )
 
 type birthdayStateMachine struct {
-	textFacility    *TextFacility
-	userStateLookup map[uint64]state
-	newBirthday     birthdayEntry //FIXME: Only works when one user is adding a new entry; ---> add map[userId]entry
+	textFacility      *TextFacility
+	userStateLookup   map[uint64]state
+	newBirthdayLookup map[uint64]*birthdayEntry //FIXME: Only works when one user is adding a new entry; ---> add map[userId]entry
 }
 
 type birthdayEntry struct {
@@ -48,16 +48,17 @@ func (b *birthdayStateMachine) transitStates(update comm.Update) state {
 	case ASK_BIRTHDAY_CONTACT:
 		fallthrough
 	case ASK_BIRTHDAY_CONFIRMATION:
-		b.userStateLookup[userId] = b.addRoutine(b.userStateLookup[userId], chatId, update.Message.Text)
+		b.userStateLookup[userId] = b.addRoutine(b.userStateLookup[userId], userId, chatId, update.Message.Text)
 	case ADD_BIRTHDAY_CONFIRMATION:
 		confValue := update.CallbackQuery.Data
+		newBirthday := b.newBirthdayLookup[userId]
 		if confValue == "Yes" {
 			sendSimpleMessage(fmt.Sprintf("%d", chatId), "new entry confirmed")
-			err := db.AddBirthday(fmt.Sprintf("%d", userId), b.newBirthday.date, b.newBirthday.name, b.newBirthday.contact)
+			err := db.AddBirthday(fmt.Sprintf("%d", userId), newBirthday.date, newBirthday.name, newBirthday.contact)
 			if err != nil {
 				panic(err)
 			}
-			b.newBirthday = birthdayEntry{}
+			b.newBirthdayLookup[userId] = &birthdayEntry{}
 		} else if confValue == "No" {
 			b.userStateLookup[userId] = BIRTHDAYS_STATE
 			sendSimpleMessage(fmt.Sprintf("%d", chatId), "new entry discarded")
@@ -104,7 +105,7 @@ func (b *birthdayStateMachine) processBirthdaysCallback(update comm.Update, faci
 				facility)
 			retState = BIRTHDAYS_STATE
 		} else if cbQuery.Data == "Add" {
-			retState = b.addRoutine(ASK_BIRTHDAY_NAME, cbQuery.Message.Chat.Id, update.Message.Text)
+			retState = b.addRoutine(ASK_BIRTHDAY_NAME, cbQuery.From.Id, cbQuery.Message.Chat.Id, update.Message.Text)
 		} else if cbQuery.Data == "Remove" {
 			retState = b.removeRoutine(REMOVE_BIRTHDAY_STATE, cbQuery.Message.Chat.Id, cbQuery.Message.From.Id, update.Message.Text)
 		} else if cbQuery.Data == "Edit" {
@@ -114,16 +115,17 @@ func (b *birthdayStateMachine) processBirthdaysCallback(update comm.Update, faci
 	return retState
 }
 
-func (b *birthdayStateMachine) addRoutine(currentState state, chatId uint64, messageText string) state {
+func (b *birthdayStateMachine) addRoutine(currentState state, userId, chatId uint64, messageText string) state {
 
 	var retState state = ASK_BIRTHDAY_NAME
 	switch currentState {
 	case ASK_BIRTHDAY_NAME:
+		b.newBirthdayLookup[userId] = &birthdayEntry{}
 		sendSimpleMessage(fmt.Sprintf("%d", chatId),
 			b.textFacility.getMessageText("askBirthdayName"))
 		retState = ASK_BIRTHDAY_DATE
 	case ASK_BIRTHDAY_DATE:
-		b.newBirthday.name = messageText
+		b.newBirthdayLookup[userId].name = messageText
 		sendSimpleMessage(fmt.Sprintf("%d", chatId),
 			b.textFacility.getMessageText("askBirthdayDate"))
 		retState = ASK_BIRTHDAY_CONTACT
@@ -131,20 +133,20 @@ func (b *birthdayStateMachine) addRoutine(currentState state, chatId uint64, mes
 		//Check if the received date is right
 		//When wrong -> ASK_BIRTHDAY_DATE
 		//When true -> ASK for contact
-		b.newBirthday.date = messageText
+		b.newBirthdayLookup[userId].date = messageText
 		sendSimpleMessage(fmt.Sprintf("%d", chatId),
 			b.textFacility.getMessageText("askBirthdayContact"))
 		retState = ASK_BIRTHDAY_CONFIRMATION
 	case ASK_BIRTHDAY_CONFIRMATION:
 		//receive contact
 		//ask for confirmation
-		b.newBirthday.contact = messageText
+		b.newBirthdayLookup[userId].contact = messageText
 
 		sendSimpleMessage(fmt.Sprintf("%d", chatId), fmt.Sprintf("%s %s %s %s",
 			b.textFacility.getMessageText("askBirthdayConfirmation"),
-			b.newBirthday.name,
-			b.newBirthday.date,
-			b.newBirthday.contact,
+			b.newBirthdayLookup[userId].name,
+			b.newBirthdayLookup[userId].date,
+			b.newBirthdayLookup[userId].contact,
 		),
 		)
 		sendTextInlineKeyboard("",
