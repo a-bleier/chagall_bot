@@ -98,8 +98,8 @@ func GetAllEntryBirthdayReminders() ([]EntryBirthdayReminder, error) {
 func DeleteNthBirthday(n int, userTelegramId string) error {
 	transaction, _ := chagDb.Begin()
 
-	_, err := transaction.Exec(`DELETE FROM Birthdays Where Id In (SELECT Id FROM Birthdays WHERE UserID IN (SELECT id_internal from Users where id_telegram = ? ) order by Name asc, Date asc LIMIT ? OFFSET ?)`,
-		userTelegramId, n, n)
+	_, err := transaction.Exec(`DELETE FROM Birthdays Where Id In (SELECT Id FROM Birthdays WHERE UserID IN (SELECT id_internal from Users where id_telegram = ? ) order by Name asc, Date asc LIMIT 1 OFFSET ?)`,
+		userTelegramId, n)
 
 	if err != nil {
 		transaction.Rollback()
