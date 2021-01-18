@@ -108,8 +108,6 @@ func (b *birthdayStateMachine) processBirthdaysCallback(update comm.Update, faci
 			retState = b.addRoutine(ASK_BIRTHDAY_NAME, cbQuery.From.Id, cbQuery.Message.Chat.Id, update.Message.Text)
 		} else if cbQuery.Data == "Remove" {
 			retState = b.removeRoutine(REMOVE_BIRTHDAY_STATE, cbQuery.Message.Chat.Id, cbQuery.Message.From.Id, update.Message.Text)
-		} else if cbQuery.Data == "Edit" {
-			//tbd
 		}
 	}
 	return retState
