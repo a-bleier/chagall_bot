@@ -12,11 +12,6 @@ import (
 func initCronJobs() {
 	cronObject := cron.New()
 	fmt.Println("Setting up a cron job")
-	cronObject.AddFunc("*/10 */1 * * * *", func() {
-		fmt.Println("Job done")
-	})
-	//cronObject.AddFunc("*/10 */1 * * * *", checkBirthdays)
-	//For production
 	//TODO: Check if this works
 	cronObject.AddFunc("0 0 * * *", checkBirthdays)
 	cronObject.Start()
