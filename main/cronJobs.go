@@ -18,7 +18,7 @@ func initCronJobs() {
 	//cronObject.AddFunc("*/10 */1 * * * *", checkBirthdays)
 	//For production
 	//TODO: Check if this works
-	cronObject.AddFunc("* * 0 1-31 * *", checkBirthdays)
+	cronObject.AddFunc("0 0 * * *", checkBirthdays)
 	cronObject.Start()
 }
 
