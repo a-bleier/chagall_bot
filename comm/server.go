@@ -102,7 +102,7 @@ func (s *Stub) AddMessageToTx(v interface{}, dataType string) {
 	if err != nil {
 		panic(err)
 	}
-	item := QueueItem{data, "sendMessage"}
+	item := QueueItem{data, dataType}
 	s.queue.EnQueue(item)
 	s.cond.Broadcast()
 }

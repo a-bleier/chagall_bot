@@ -13,7 +13,7 @@ func initCronJobs() {
 	cronObject := cron.New()
 	fmt.Println("Setting up a cron job")
 	//TODO: Check if this works
-	cronObject.AddFunc("0 0 * * *", checkBirthdays)
+	cronObject.AddFunc("0 23 * * *", checkBirthdays)
 	cronObject.Start()
 }
 
