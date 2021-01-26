@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/a-bleier/chagall_bot/comm"
 	"github.com/a-bleier/chagall_bot/db"
+	"github.com/a-bleier/chagall_bot/logging"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"sync"
 )
@@ -27,6 +30,9 @@ var sender comm.Stub
 
 func main() {
 
+	//Parse cmd line arguments
+	//Initializes logging
+	parseCommandLineArgs()
 	//Init db
 	db.InitChagDB("simple.sqlite")
 
@@ -81,4 +87,36 @@ func main() {
 		stateMachine.transitStates(update)
 	}
 
+}
+
+func parseCommandLineArgs() {
+	logPtr := flag.Int("logLevel", 0, "an int. 0 -> log fatal errors, 1 -> log nothing"+
+		", 2 -> log warnings, 3 -> log everything")
+
+	flag.Parse()
+	fmt.Println("log level ", *logPtr)
+
+	//Init Logger
+	var lLevel logging.LogLevel
+	switch *logPtr {
+	case 0:
+		lLevel = logging.LOG_FATAL
+		break
+	case 1:
+		lLevel = logging.NO_LOGGING
+		break
+	case 2:
+		lLevel = logging.LOG_WARN
+		break
+	case 3:
+		lLevel = logging.LOG_ALL
+		break
+	default:
+		flag.PrintDefaults() //Prints help message to error
+		os.Exit(2)
+	}
+
+	logging.InitLogger(lLevel)
+
+	logging.LogInfo("Logging is ready")
 }
