@@ -22,6 +22,16 @@ type Update struct {
 	CallbackQuery CallbackQuery `json:"callback_query"`
 }
 
+func (u *Update) GetUserId() uint64 {
+
+	if u.Message.From.Id != 0 {
+		return u.Message.From.Id
+	} else {
+		return u.CallbackQuery.From.Id
+	}
+	return 0
+}
+
 //Message is Message Type
 type Message struct {
 	Id   int    `json:"message_id"`

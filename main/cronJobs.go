@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/a-bleier/chagall_bot/comm"
 	"github.com/a-bleier/chagall_bot/db"
+	"github.com/a-bleier/chagall_bot/logging"
 	"github.com/robfig/cron"
 	"regexp"
 	"time"
@@ -11,7 +12,7 @@ import (
 
 func initCronJobs() {
 	cronObject := cron.New()
-	fmt.Println("Setting up a cron job")
+	logging.LogInfo("Setting up cron jobs")
 	//TODO: Check if this works
 	cronObject.AddFunc("0 23 * * *", checkBirthdays)
 	cronObject.Start()
@@ -20,10 +21,10 @@ func initCronJobs() {
 //checkBirthdays goes through entries in Birthdays table and check is a person has its birthday today. if it found one,
 //a message will be put in the queue
 func checkBirthdays() {
-	fmt.Println("checking for birthdays")
+	logging.LogInfo("Checking for birthdays")
 	ebrList, err := db.GetAllEntryBirthdayReminders()
 	if err != nil {
-		fmt.Println("error in the birthday cron job")
+		logging.LogWarning("An error occured while querying the database for birthdays")
 	}
 
 	for _, entry := range ebrList {
@@ -31,9 +32,7 @@ func checkBirthdays() {
 		t := time.Now()
 		_, month, day := t.Date()
 		pattern := fmt.Sprintf("(-|\\s)%02d(-|\\s)%02d", int(month), day)
-		fmt.Println("pattern ", pattern)
 		r, _ := regexp.Compile(pattern)
-		fmt.Println(entry.Date)
 		if r.MatchString(entry.Date) == false {
 			continue
 		}

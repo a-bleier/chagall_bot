@@ -9,7 +9,6 @@ import (
 	"github.com/a-bleier/chagall_bot/logging"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"sync"
 )
 
@@ -46,8 +45,6 @@ func main() {
 	var gConfig globalConfig
 	gConfig.setupGlobalConfig()
 
-	fmt.Println("Chagall says hello")
-
 	mR := sync.Mutex{}
 	condR := sync.NewCond(&mR)
 
@@ -60,6 +57,7 @@ func main() {
 	txQueue := comm.NewSafeQueue()
 	sender = comm.NewStub(&txQueue, 698207968, condT, gConfig.telegramKey, false)
 
+	logging.LogInfo("Chagall starts listening and serving")
 	go listener.Listen()
 	go sender.Send()
 
@@ -73,14 +71,15 @@ func main() {
 		condR.L.Unlock()
 
 		update := item.Data.(comm.Update)
-		fmt.Println(update.Id)
-		fmt.Println("chatId", update.Message.Chat.Id)
-		fmt.Println("userId ", update.Message.From.Id)
-		fmt.Println(update.Message.Text)
 
-		if db.CheckUserIsRegistered(strconv.Itoa(1264160269)) == false {
+		logging.LogInfo(fmt.Sprintf("%d", update.Id))
+		logging.LogInfo(fmt.Sprintf("%d", update.Message.Chat.Id))
+		logging.LogInfo(fmt.Sprintf("%d", update.Message.From.Id))
+		logging.LogInfo(update.Message.Text)
+
+		if db.CheckUserIsRegistered(fmt.Sprint(update.GetUserId())) == false {
 			fmt.Println("A unregistered user tries to log in")
-			//TODO Send info text to unregistered user
+			logging.LogWarning(fmt.Sprintf("A unregistered user tries to lock in. User Id: %d Chat Id: %d", update.GetUserId(), update.Message.Chat.Id))
 			continue
 		}
 
@@ -94,7 +93,6 @@ func parseCommandLineArgs() {
 		", 2 -> log warnings, 3 -> log everything")
 
 	flag.Parse()
-	fmt.Println("log level ", *logPtr)
 
 	//Init Logger
 	var lLevel logging.LogLevel

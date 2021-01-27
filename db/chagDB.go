@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"github.com/a-bleier/chagall_bot/logging"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
@@ -21,7 +22,7 @@ type EntryBirthdayReminder struct {
 
 func InitChagDB(dbName string) {
 	var err error
-	chagDb, err = sql.Open("sqlite3", "simple.sqlite")
+	chagDb, err = sql.Open("sqlite3", dbName)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -35,11 +36,11 @@ func CheckUserIsRegistered(id string) bool {
 
 }
 
-func ListAllBirthdays(user_id string) []string {
-	rows, err := chagDb.Query(`SELECT Date, Name, Contact FROM Birthdays WHERE UserID IN (SELECT id_internal from Users where id_telegram = ? ) order by Name asc, Date asc`, user_id)
+func ListAllBirthdays(user_id string) ([]string, error) {
+	var rows, err = chagDb.Query(`SELECT Date, Name, Contact FROM Birthdays WHERE UserID IN (SELECT id_internal from Users where id_telegram = ? ) order by Name asc, Date asc`, user_id)
 	defer rows.Close()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	var output []string = make([]string, 0)
 	for rows.Next() {
@@ -49,31 +50,38 @@ func ListAllBirthdays(user_id string) []string {
 			contact string
 		)
 		if err := rows.Scan(&date, &name, &contact); err != nil {
-			panic(err)
+			return nil, err
 		}
 		line := fmt.Sprintf("%s %s %s", date, name, contact)
-		fmt.Println(line)
 		output = append(output, line)
 	}
-	return output
+	return output, err
 }
 
 //TODO Date formatting
 func AddBirthday(userTelegramId string, date, name, contact string) error {
-	transaction, _ := chagDb.Begin()
-
-	_, err := transaction.Exec(`INSERT INTO Birthdays (Date, Name, Contact, UserId) VALUES (?, ?, ?, (SELECT id_internal FROM Users WHERE id_telegram = ?))`,
+	transaction, err := chagDb.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = transaction.Exec(`INSERT INTO Birthdays (Date, Name, Contact, UserId) VALUES (?, ?, ?, (SELECT id_internal FROM Users WHERE id_telegram = ?))`,
 		date,
 		name,
 		contact,
 		userTelegramId,
 	)
-	transaction.Commit()
+	if err != nil {
+		return err
+	}
+	err = transaction.Commit()
 	return err
 }
 
 func GetAllEntryBirthdayReminders() ([]EntryBirthdayReminder, error) {
-	rows, _ := chagDb.Query("SELECT Users.Name, ChatId, Date, Birthdays.Name, Contact FROM Users JOIN Birthdays")
+	rows, err := chagDb.Query("SELECT Users.Name, ChatId, Date, Birthdays.Name, Contact FROM Users JOIN Birthdays")
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 	var ebrList []EntryBirthdayReminder = make([]EntryBirthdayReminder, 0)
 	for rows.Next() {
@@ -96,17 +104,25 @@ func GetAllEntryBirthdayReminders() ([]EntryBirthdayReminder, error) {
 }
 
 func DeleteNthBirthday(n int, userTelegramId string) error {
-	transaction, _ := chagDb.Begin()
-
-	_, err := transaction.Exec(`DELETE FROM Birthdays Where Id In (SELECT Id FROM Birthdays WHERE UserID IN (SELECT id_internal from Users where id_telegram = ? ) order by Name asc, Date asc LIMIT 1 OFFSET ?)`,
-		userTelegramId, n)
+	transaction, err := chagDb.Begin()
 
 	if err != nil {
-		transaction.Rollback()
 		return err
 	}
 
-	transaction.Commit()
+	_, err = transaction.Exec(`DELETE FROM Birthdays Where Id In (SELECT Id FROM Birthdays WHERE UserID IN (SELECT id_internal from Users where id_telegram = ? ) order by Name asc, Date asc LIMIT 1 OFFSET ?)`,
+		userTelegramId, n)
 
-	return nil
+	if err != nil {
+		err2 := transaction.Rollback()
+		if err != nil {
+			logging.LogFatalError("Delete didn't work, also a rollback wasn't possible. Transaction pending")
+			return err2
+		}
+		return err
+	}
+
+	err = transaction.Commit()
+
+	return err
 }

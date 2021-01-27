@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/a-bleier/chagall_bot/comm"
 	"github.com/a-bleier/chagall_bot/db"
+	"github.com/a-bleier/chagall_bot/logging"
 	"strconv"
 	"strings"
 )
@@ -11,7 +12,7 @@ import (
 type birthdayStateMachine struct {
 	textFacility      *TextFacility
 	userStateLookup   map[uint64]state
-	newBirthdayLookup map[uint64]*birthdayEntry //FIXME: Only works when one user is adding a new entry; ---> add map[userId]entry
+	newBirthdayLookup map[uint64]*birthdayEntry
 }
 
 type birthdayEntry struct {
@@ -96,8 +97,14 @@ func (b *birthdayStateMachine) processBirthdaysCallback(update comm.Update, faci
 				facility)
 			retState = CHOOSING_SERVICE_STATE
 		} else if cbQuery.Data == "List" {
+
+			birthdaysList, err := db.ListAllBirthdays(fmt.Sprintf("%d", cbQuery.From.Id))
+			if err != nil {
+				logging.LogFatalError(fmt.Sprintf("Listing birthdays didn't work. User %d Chat %d Error %s",
+					cbQuery.From.Id, cbQuery.Message.Chat.Id, err.Error()))
+			}
 			sendSimpleMessage(fmt.Sprintf("%d", cbQuery.Message.Chat.Id),
-				strings.Join(db.ListAllBirthdays(fmt.Sprintf("%d", cbQuery.From.Id)), "\n"))
+				strings.Join(birthdaysList, "\n"))
 			sendTextInlineKeyboard(fmt.Sprintf("%d", cbQuery.From.Id),
 				fmt.Sprintf("%d", cbQuery.Message.Chat.Id),
 				"birthdayService",
@@ -107,7 +114,7 @@ func (b *birthdayStateMachine) processBirthdaysCallback(update comm.Update, faci
 		} else if cbQuery.Data == "Add" {
 			retState = b.addRoutine(ASK_BIRTHDAY_NAME, cbQuery.From.Id, cbQuery.Message.Chat.Id, update.Message.Text)
 		} else if cbQuery.Data == "Remove" {
-			retState = b.removeRoutine(REMOVE_BIRTHDAY_STATE, cbQuery.Message.Chat.Id, cbQuery.Message.From.Id, update.Message.Text)
+			retState = b.removeRoutine(REMOVE_BIRTHDAY_STATE, cbQuery.Message.Chat.Id, cbQuery.From.Id, update.Message.Text)
 		}
 	}
 	return retState
@@ -115,7 +122,7 @@ func (b *birthdayStateMachine) processBirthdaysCallback(update comm.Update, faci
 
 func (b *birthdayStateMachine) addRoutine(currentState state, userId, chatId uint64, messageText string) state {
 
-	var retState state = ASK_BIRTHDAY_NAME
+	var retState = ASK_BIRTHDAY_NAME
 	switch currentState {
 	case ASK_BIRTHDAY_NAME:
 		b.newBirthdayLookup[userId] = &birthdayEntry{}
@@ -159,27 +166,33 @@ func (b *birthdayStateMachine) addRoutine(currentState state, userId, chatId uin
 
 func (b *birthdayStateMachine) removeRoutine(currentState state, chatId uint64, userId uint64, messageText string) state {
 
-	var retState state = BIRTHDAYS_STATE
+	var retState = BIRTHDAYS_STATE
 	switch currentState {
 	case REMOVE_BIRTHDAY_STATE:
 		text := ""
-		entries := db.ListAllBirthdays(fmt.Sprintf("%d", chatId))
-		fmt.Println(entries)
+		entries, err := db.ListAllBirthdays(fmt.Sprint(userId))
+		if err != nil {
+			logging.LogFatalError(fmt.Sprintf("Couldn't get a birthdays list of user %d chat %d; Error %s", userId, chatId, err.Error()))
+		}
 		for i, e := range entries {
 			text += fmt.Sprintf("%d %s\n", i, e)
 		}
-		fmt.Println("Delete list ", text)
-		sendSimpleMessage(fmt.Sprintf("%d", chatId), text)
-		sendSimpleMessage(fmt.Sprintf("%d", chatId), b.textFacility.getMessageText("askForNumber"))
+		logging.LogInfo(fmt.Sprintf("Presented for deletion user %d: %s", userId, text))
+		sendSimpleMessage(fmt.Sprint(chatId), text)
+		sendSimpleMessage(fmt.Sprint(chatId), b.textFacility.getMessageText("askForNumber"))
 		retState = REMOVE_BIRTHDAY_CONFIRMATION
 	case REMOVE_BIRTHDAY_CONFIRMATION:
 		num, err := strconv.Atoi(messageText)
 		if err != nil {
 			sendSimpleMessage(fmt.Sprintf("%d", chatId), b.textFacility.getMessageText("askForNumber"))
 			retState = REMOVE_BIRTHDAY_CONFIRMATION
+			logging.LogWarning(fmt.Sprintf("User %d in chat %d didn't provide a warning", userId, chatId))
 			break
 		}
-		db.DeleteNthBirthday(num, fmt.Sprintf("%d", userId))
+		err = db.DeleteNthBirthday(num, fmt.Sprintf("%d", userId))
+		if err != nil {
+			logging.LogFatalError(fmt.Sprintf("Can't delete proposed birthday by user %d chat %d; Error %s", userId, chatId, err.Error()))
+		}
 		sendTextInlineKeyboard("",
 			fmt.Sprintf("%d", chatId),
 			"deletedConfirmation",
@@ -188,9 +201,4 @@ func (b *birthdayStateMachine) removeRoutine(currentState state, chatId uint64, 
 		retState = BIRTHDAYS_STATE
 	}
 	return retState
-}
-
-//Not so important here
-func editRoutine() {
-
 }
