@@ -3,7 +3,7 @@ package comm
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"github.com/a-bleier/chagall_bot/logging"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -23,7 +23,7 @@ type Stub struct {
 func (s *Stub) Listen() {
 
 	if s.isListener == false {
-		fmt.Println("This stub is a Sender ! Don't listen here")
+		logging.LogWarning("There was a try to use this sending stub as a listener.")
 		return
 	}
 	for true {
@@ -33,12 +33,12 @@ func (s *Stub) Listen() {
 		resp, err := http.Get(url)
 
 		if err != nil {
-			fmt.Print("Error")
+			logging.LogFatalError("Couldn't fetch " + url)
 		}
 
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("error")
+			logging.LogFatalError("Couldn't read the body of the response")
 			return
 		}
 		defer resp.Body.Close()
@@ -64,7 +64,7 @@ func (s *Stub) Listen() {
 
 func (s *Stub) Send() {
 	if s.isListener == true {
-		fmt.Println("This stub is a Listener ! Don't send here")
+		logging.LogWarning("There was a try to use this listening stub as a sender.")
 		return
 	}
 
@@ -73,33 +73,29 @@ func (s *Stub) Send() {
 		for s.queue.IsEmpty() {
 			s.cond.Wait()
 		}
-		//text := s.queue.DeQueue().(string)
 		item := s.queue.DeQueue()
 		s.cond.L.Unlock()
 
 		jsonStr := item.Data.([]byte)
 		method := item.Info
-		//fmt.Println("Gonna send", text)
-		fmt.Println(method)
-		url := "https://api.telegram.org/bot" + s.apiKey + "/" + method
-		//jsonStr := []byte(text)
+		logging.LogInfo("Using method " + method)
 
+		url := "https://api.telegram.org/bot" + s.apiKey + "/" + method
 		resp, _ := http.Post(url, "application/json", bytes.NewBuffer(jsonStr))
 
 		resp.Body.Close()
 
-		fmt.Println("response Status:", resp.Status)
-		fmt.Println("response Headers:", resp.Header)
+		//fmt.Println("response Status: ", resp.Status)
+		logging.LogInfo("response Status" + resp.Status)
 
 	}
-
-	//Do some sending here
 }
 
 //Could turn out wonky due to race conditions
 func (s *Stub) AddMessageToTx(v interface{}, dataType string) {
 	data, err := json.Marshal(v)
 	if err != nil {
+		logging.LogFatalError("Couldn't queue a message into tx queue")
 		panic(err)
 	}
 	item := QueueItem{data, dataType}
